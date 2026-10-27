@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="slate">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Re:Zero Reader">
+  <meta name="theme-color" content="#12141a">
+  <link rel="manifest" href="/manifest.json">
+  <title>ゼロ読 - Re:Zero Japanese LN Reader</title>
+  <link rel="stylesheet" href="/static/css/reader.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ======================================================================
+       LIBRARY VIEW (Libreria Volumi)
+       ====================================================================== -->
+  <div id="library-view">
+    <header class="lib-header">
+      <div class="lib-brand">
+        <span class="brand-badge">RE:ZERO READER</span>
+        <div>
+          <h1>ゼロ読・ライブラリ</h1>
+          <p>Lettore professionale di Light Novel in Giapponese con Dizionario & Tracking</p>
+        </div>
+      </div>
+      <div class="lib-controls">
+        <button class="btn btn-primary" id="btn-open-import" title="Importa file EPUB con verifica giapponese">
+          📥 Importa EPUB
+        </button>
+        <button class="btn" id="btn-open-ipad" title="Usa su iPad / Tablet via Wi-Fi">
+          📱 iPad / Mobile
+        </button>
+        <div class="search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="lib-search" placeholder="Cerca volume o capitolo...">
+        </div>
+        <button class="btn btn-icon" id="btn-open-vocab-lib" title="Vocabolario & Termini">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+        </button>
+        <button class="btn btn-icon" id="btn-open-stats-lib" title="Statistiche di lettura">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        </button>
+        <button class="btn btn-icon" id="btn-open-settings-lib" title="Impostazioni">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Continue Reading Banner -->
+    <div id="continue-reading-container"></div>
+
+    <!-- Books Grid -->
+    <div class="books-grid" id="books-grid">
+      <!-- Generated via JS -->
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       READER VIEW (Lettore Immersivo)
+       ====================================================================== -->
+  <div id="reader-view" style="display: none;">
+    <!-- Top Bar -->
+    <nav class="reader-toolbar">
+      <div class="tb-group">
+        <button class="btn btn-icon" id="btn-back-to-lib" title="Torna alla Libreria">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button class="btn btn-icon" id="btn-open-toc" title="Indice Capitoli (TOC)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+        </button>
+        <button class="btn btn-icon" id="btn-add-bookmark" title="Aggiungi Segnalibro">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+      </div>
+
+      <div class="tb-title-group">
+        <div class="tb-book-title" id="tb-book-title">Caricamento...</div>
+        <div class="tb-chapter-title" id="tb-chapter-title">Capitolo</div>
+      </div>
+
+      <div class="tb-group">
+        <!-- Writing Mode Toggle -->
+        <button class="btn btn-icon" id="btn-toggle-writing-mode" title="Cambia orientamento (Verticale 縦書き / Orizzontale 横書き)">
+          <span id="writing-mode-indicator" style="font-size: 13px; font-weight: 700;">縦</span>
+        </button>
+
+        <!-- Furigana Toggle -->
+        <button class="btn btn-icon" id="btn-furigana-mode" title="Modalità Furigana (Tutti / Originali / Hover / Nascosti)">
+          <span style="font-size: 12px; font-weight: 700;">ルビ</span>
+        </button>
+
+        <!-- Bookmarks Drawer -->
+        <button class="btn btn-icon" id="btn-open-bookmarks" title="Segnalibri">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+
+        <!-- Vocab Drawer -->
+        <button class="btn btn-icon" id="btn-open-vocab" title="Termini & Vocabolario salvato">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </button>
+
+        <!-- Settings -->
+        <button class="btn btn-icon" id="btn-open-settings" title="Impostazioni aspetto">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+
+        <!-- Fullscreen -->
+        <button class="btn btn-icon" id="btn-toggle-fullscreen" title="Schermo intero (F11)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Reading Stage -->
+    <div class="reader-content-wrap">
+      <div class="reader-stage mode-vertical" id="reader-stage">
+        <div class="reader-text-container" id="reader-text">
+          <!-- Chapter XHTML will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <footer class="reader-bottombar">
+      <div class="bb-nav">
+        <button class="btn btn-icon" id="btn-prev-chapter" title="Capitolo precedente (← / Pagina su)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button class="btn btn-icon" id="btn-next-chapter" title="Capitolo successivo (→ / Pagina giù)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <span id="chapter-counter">0 / 0</span>
+      </div>
+
+      <div class="bb-progress">
+        <input type="range" id="bb-chapter-slider" class="bb-slider" min="0" max="100" value="0" title="Scorri capitolo">
+        <span id="bb-scroll-percent">0%</span>
+      </div>
+
+      <div class="bb-stats">
+        <span id="reading-active-timer">⏱️ 0m</span>
+        <span id="reading-chars-stat">📝 0 car</span>
+        <span id="reading-speed-stat">⚡ 0 c/m</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ======================================================================
+       FLOATING INTERACTIVE DICTIONARY POPUP
+       ====================================================================== -->
+  <div id="dict-popup">
+    <div class="dp-head">
+      <div>
+        <div class="dp-term" id="dp-term">単語</div>
+        <div class="dp-reading" id="dp-reading">たんご</div>
+      </div>
+      <button class="btn-icon dp-audio-btn" id="dp-audio-btn" title="Pronuncia audio">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      </button>
+    </div>
+
+    <!-- Definitions -->
+    <div class="dp-defs" id="dp-defs">
+      Caricamento definizioni...
+    </div>
+
+    <!-- Sentence translation box (optional on demand) -->
+    <div class="trans-preview" id="dp-trans-preview" style="display: none;"></div>
+
+    <!-- Action buttons -->
+    <div class="dp-actions">
+      <button class="btn btn-primary" id="dp-mine-btn" title="Salva parola nel vocabolario (Anki)">
+        ⭐ Salva (Mine)
+      </button>
+      <button class="btn" id="dp-known-btn" title="Segna come già visto / conosciuto">
+        👁️ Già visto
+      </button>
+      <button class="btn" id="dp-translate-sent-btn" title="Traduci la frase intera in italiano">
+        🇮🇹 Traduci frase
+      </button>
+      <button class="btn" id="dp-jisho-btn" title="Apri su Jisho.org">
+        🌐 Jisho.org
+      </button>
+    </div>
+  </div>
+
+  <!-- Floating Text Selection Bar -->
+  <div id="selection-bar">
+    <button class="btn" id="sb-translate-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+      Traduci Selezione
+    </button>
+    <button class="btn" id="sb-save-sentence-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Salva Frase
+    </button>
+  </div>
+
+  <!-- ======================================================================
+       DRAWERS & PANELS
+       ====================================================================== -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+
+  <!-- TOC Drawer -->
+  <div class="drawer" id="toc-drawer">
+    <div class="drawer-header">
+      <h3>Indice del Volume (目次)</h3>
+      <button class="btn-icon close-drawer">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="toc-list" id="toc-items-container">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Bookmarks Drawer -->
+  <div class="drawer" id="bookmarks-drawer">
+    <div class="drawer-header">
+      <h3>Segnalibri (栞)</h3>
+      <button class="btn-icon close-drawer">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="bm-list" id="bookmarks-list">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Vocab & Mined Words Drawer -->
+  <div class="drawer" id="vocab-drawer">
+    <div class="drawer-header">
+      <h3>Vocabolario & Termini</h3>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-primary" id="btn-export-anki" style="font-size: 12px; padding: 4px 10px;" title="Esporta per Anki (.tsv)">
+          📥 Anki (.tsv)
+        </button>
+        <button class="btn" id="btn-export-json" style="font-size: 12px; padding: 4px 10px;" title="Esporta backup (.json)">
+          JSON
+        </button>
+        <button class="btn-icon close-drawer">✕</button>
+      </div>
+    </div>
+    <div class="drawer-body">
+      <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+        <input type="text" id="vocab-search" class="btn" style="flex: 1; text-align: left;" placeholder="Filtra vocaboli...">
+        <select id="vocab-filter-status" class="btn" style="font-size: 12px;">
+          <option value="all">Tutti</option>
+          <option value="learning">In studio</option>
+          <option value="known">Conosciuti</option>
+        </select>
+      </div>
+      <div class="vocab-list" id="vocab-items-container">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Reading Stats Drawer -->
+  <div class="drawer" id="stats-drawer">
+    <div class="drawer-header">
+      <h3>Statistiche di Lettura</h3>
+      <button class="btn-icon close-drawer">✕</button>
+    </div>
+    <div class="drawer-body" id="stats-body">
+      <!-- Injected via JS -->
+    </div>
+  </div>
+
+  <!-- Settings Drawer -->
+  <div class="drawer" id="settings-drawer">
+    <div class="drawer-header">
+      <h3>Personalizzazione & Aspetto</h3>
+      <button class="btn-icon close-drawer">✕</button>
+    </div>
+    <div class="drawer-body">
+      <!-- Theme Selection -->
+      <div class="setting-row">
+        <div class="setting-label">Tema Interfaccia</div>
+        <div class="theme-options">
+          <button class="theme-btn active" data-set-theme="slate" style="background: #1a1e27;" title="Slate Dark"></button>
+          <button class="theme-btn" data-set-theme="oled" style="background: #000000; border-color: #333;" title="OLED Nero"></button>
+          <button class="theme-btn" data-set-theme="sepia" style="background: #fbf0d9; border-color: #d1b48c;" title="Sepia Carta"></button>
+          <button class="theme-btn" data-set-theme="light" style="background: #ffffff; border-color: #cbd5e1;" title="Light Bianco"></button>
+          <button class="theme-btn" data-set-theme="sakura" style="background: #fdf5f7; border-color: #f8b4d9;" title="Sakura"></button>
+        </div>
+      </div>
+
+      <!-- Writing Mode -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span>Orientamento Testo</span>
+          <span id="val-writing-mode">Verticale (縦書き)</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" id="set-mode-vertical" style="flex: 1;">縦書き Verticale</button>
+          <button class="btn" id="set-mode-horizontal" style="flex: 1;">横書き Orizzontale</button>
+        </div>
+      </div>
+
+      <!-- Font Family -->
+      <div class="setting-row">
+        <div class="setting-label">Carattere Giapponese</div>
+        <select id="select-font-family" class="btn" style="width: 100%;">
+          <option value="'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif">Noto Serif JP (Mincho Elegante)</option>
+          <option value="'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif">Noto Sans JP (Gothic Moderno)</option>
+          <option value="'Yu Mincho', 'MS Mincho', serif">Yu Mincho (Tradizionale)</option>
+          <option value="'Meiryo', sans-serif">Meiryo (Schermo PC)</option>
+        </select>
+      </div>
+
+      <!-- Font Size Slider -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span>Dimensione Testo</span>
+          <span id="val-font-size">22px</span>
+        </div>
+        <input type="range" id="slider-font-size" class="setting-slider" min="14" max="44" value="22">
+      </div>
+
+      <!-- Line Height Slider -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span>Interlinea</span>
+          <span id="val-line-height">2.2</span>
+        </div>
+        <input type="range" id="slider-line-height" class="setting-slider" min="15" max="35" value="22">
+      </div>
+
+      <!-- Letter Spacing Slider -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span>Spaziatura Caratteri</span>
+          <span id="val-letter-spacing">0.08em</span>
+        </div>
+        <input type="range" id="slider-letter-spacing" class="setting-slider" min="0" max="25" value="8">
+      </div>
+
+      <!-- Furigana Mode -->
+      <div class="setting-row">
+        <div class="setting-label">Modalità Furigana (Ruby)</div>
+        <select id="select-furigana-mode" class="btn" style="width: 100%;">
+          <option value="original">Originali del Libro (Predefinito)</option>
+          <option value="auto">Genera Auto-Furigana su tutti i Kanji</option>
+          <option value="hover">Mostra solo al passaggio del mouse</option>
+          <option value="hidden">Nascondi tutti i Furigana (Kanji Test)</option>
+        </select>
+      </div>
+
+      <!-- Vocab Tracking Highlight Toggle -->
+      <div class="setting-row" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="setting-label" style="margin-bottom: 0;">
+          <span>Evidenzia Termini Già Visti</span>
+        </div>
+        <input type="checkbox" id="check-highlight-seen" checked style="width: 18px; height: 18px; accent-color: var(--accent);">
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       IMAGE LIGHTBOX MODAL (Zoom & Pan Illustrazioni)
+       ====================================================================== -->
+  <div id="lightbox-modal">
+    <div class="lb-toolbar">
+      <div style="font-size: 14px; font-weight: 600;">Illustrazione LN</div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span id="lb-zoom-level" style="font-size: 13px;">100%</span>
+        <button class="btn btn-icon" id="lb-zoom-out" title="Riduci">-</button>
+        <button class="btn btn-icon" id="lb-zoom-in" title="Ingrandisci">+</button>
+        <button class="btn btn-icon" id="lb-zoom-reset" title="Reimposta">1:1</button>
+        <button class="btn btn-icon" id="lb-close" title="Chiudi">✕</button>
+      </div>
+    </div>
+    <div class="lb-viewport" id="lb-viewport">
+      <img id="lb-image" class="lb-img" src="" alt="Illustrazione">
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       IMPORT EPUB MODAL (Verifica lingua giapponese)
+       ====================================================================== -->
+  <div id="import-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>📥 Importa Volume Light Novel</h3>
+        <button class="btn-icon" id="btn-close-import-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+          Seleziona o trascina un file <code>.epub</code>. Verrà eseguita la verifica automatica dell'integrità e del testo giapponese prima dell'aggiunta.
+        </p>
+
+        <!-- Drop Zone -->
+        <div class="drop-zone" id="epub-drop-zone">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent); margin-bottom: 8px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Trascina qui il file EPUB</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">oppure seleziona dal computer / iPad</div>
+          <button class="btn" type="button" id="btn-browse-file">Sfoglia File...</button>
+          <input type="file" id="epub-file-input" accept=".epub" style="display: none;">
+        </div>
+
+        <!-- Status Message / Verification result -->
+        <div id="import-status" style="display: none; margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 13px; line-height: 1.4;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       IPAD / MOBILE CONNECTION MODAL
+       ====================================================================== -->
+  <div id="ipad-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>📱 Connetti iPad o Tablet</h3>
+        <button class="btn-icon" id="btn-close-ipad-modal">✕</button>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+          Assicurati che iPad e PC siano connessi alla <strong>stessa rete Wi-Fi</strong>.
+        </p>
+
+        <div class="qr-card">
+          <img id="ipad-qr-img" src="/api/qr" alt="QR Code" width="180" height="180">
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">Inquadra con la Fotocamera dell'iPad</div>
+        </div>
+
+        <div class="ipad-url-row">
+          <input type="text" id="ipad-url-input" readonly value="Caricamento...">
+          <button class="btn btn-primary" id="btn-copy-ipad-url" title="Copia link">Copia</button>
+        </div>
+
+        <div class="ipad-instructions">
+          <div class="step-row">
+            <span class="step-num">1</span>
+            <span>Inquadra il QR Code oppure apri <strong>Safari</strong> sull'iPad e inserisci l'indirizzo sopra.</span>
+          </div>
+          <div class="step-row">
+            <span class="step-num">2</span>
+            <span>Per usarlo a <strong>schermo intero come vera app</strong>: in Safari tocca il pulsante <strong>Condividi</strong> (quadrato con freccia verso l'alto).</span>
+          </div>
+          <div class="step-row">
+            <span class="step-num">3</span>
+            <span>Seleziona <strong>"Aggiungi alla schermata Home"</strong>. L'icona apparirà tra le app dell'iPad!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
