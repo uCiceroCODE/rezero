@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.epub
+*.zip
+*.tar.gz
+reader_data/user_data.db-shm
+reader_data/user_data.db-wal
+.vscode/
+.idea/

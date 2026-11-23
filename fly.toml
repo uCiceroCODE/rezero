@@ -1,0 +1,33 @@
+# fly.toml — Re:Zero Japanese Reader su Fly.io
+# Generato automaticamente — modifica app name se necessario
+
+app = "rezero-reader"
+primary_region = "fra"  # Frankfurt — vicino Italia
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false   # NON spegnere mai (sempre accessibile)
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+# Volume persistente: EPUBs + databases
+# Creato con: fly volumes create rezero_data --size 5 --region fra
+[[mounts]]
+  source = "rezero_data"
+  destination = "/data"
