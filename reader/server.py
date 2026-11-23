@@ -49,15 +49,6 @@ def web_manifest():
 
 @app.route('/api/server_info')
 def server_info():
-    fly_app = os.environ.get('FLY_APP_NAME')
-    if fly_app:
-        public_url = f"https://{fly_app}.fly.dev"
-        return jsonify({
-            'lan_ip': fly_app + '.fly.dev',
-            'port': 443,
-            'url': public_url,
-            'local_url': public_url
-        })
     ip = get_lan_ip()
     port = int(os.environ.get('PORT', 5173))
     return jsonify({
@@ -69,14 +60,9 @@ def server_info():
 
 @app.route('/api/qr')
 def get_qr_code():
-    # On Fly.io use FLY_APP_NAME env var; fallback to LAN
-    fly_app = os.environ.get('FLY_APP_NAME')
-    if fly_app:
-        url = f"https://{fly_app}.fly.dev"
-    else:
-        ip = get_lan_ip()
-        port = int(os.environ.get('PORT', 5173))
-        url = f"http://{ip}:{port}"
+    ip = get_lan_ip()
+    port = int(os.environ.get('PORT', 5173))
+    url = f"http://{ip}:{port}"
     qr = qrcode.QRCode(box_size=8, border=2)
     qr.add_data(url)
     qr.make(fit=True)
