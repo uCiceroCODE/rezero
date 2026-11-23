@@ -414,6 +414,20 @@ def get_chapter_content(book_id, spine_index):
             for meta in soup.find_all('meta', attrs={'name': 'viewport'}):
                 meta.decompose()
 
+            # Security sanitization: strip executable/embedded tags
+            for tag in soup.find_all(['script', 'iframe', 'object', 'embed', 'applet', 'base', 'form']):
+                tag.decompose()
+
+            # Security sanitization: strip dangerous inline events and javascript: URLs
+            for el in soup.find_all():
+                event_attrs = [k for k in el.attrs if k.lower().startswith('on')]
+                for k in event_attrs:
+                    del el[k]
+                for attr in ('href', 'src'):
+                    val = el.get(attr)
+                    if val and isinstance(val, str) and val.strip().lower().startswith(('javascript:', 'data:text/html')):
+                        del el[attr]
+
             # Extract body content and detected is_vertical
             body = soup.find('body')
             html_tag = soup.find('html')
