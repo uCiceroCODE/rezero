@@ -421,8 +421,17 @@ async function showDictionaryPopup(word, anchorElement) {
 
     if (data.found && data.results.length > 0) {
       const first = data.results[0];
-      termEl.textContent = first.kanji || word;
-      readingEl.textContent = first.reading || '';
+
+      // Show the word exactly as it appears in the text.
+      // Only replace with the dictionary kanji form if the selected word
+      // already contains kanji (i.e. don't substitute 園 for その).
+      const hasKanji = /[\u4e00-\u9faf\u3400-\u4dbf]/.test(word);
+      termEl.textContent = hasKanji ? (first.kanji || word) : word;
+
+      // Show reading only when it differs from the displayed term
+      const displayTerm = termEl.textContent;
+      const reading = first.reading || '';
+      readingEl.textContent = (reading && reading !== displayTerm) ? reading : '';
 
       // Handle EDICT tags: show toggle button only when tags exist
       const tagsEl = document.getElementById('dp-tags');
