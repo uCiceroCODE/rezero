@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import re
+import html
 import urllib.request
 import urllib.parse
 import json
@@ -86,6 +87,30 @@ DEINFLECT_RULES = [
     ('れる', 'る'),
 ]
 
+# Punctuation to strip from lookup terms (compiled once)
+_PUNCT_RE = re.compile(
+    r'^[\s\.,!?、。！？…「」『』【】《》〝〟・〜（）\(\)\[\]\{\}<>"\'\'\'""]+|'
+    r'[\s\.,!?、。！？…「」『』【】《》〝〟・〜（）\(\)\[\]\{\}<>"\'\'\'""]+$'
+)
+
+# EDICT tag pattern: e.g. (rK), (ik), (iK), (ok), (oK), (sk), (sK)
+# These are field-type markers in EDICT entries that are not useful for display
+_EDICT_TAG_RE = re.compile(r'\([a-zA-Z]{1,4}\)')
+
+def _strip_edict_tags(text: str) -> tuple[str, list[str]]:
+    """Remove EDICT tags from a kanji/reading field.
+    Returns (cleaned_text, [tags_found]).
+    """
+    tags = _EDICT_TAG_RE.findall(text)
+    cleaned = _EDICT_TAG_RE.sub('', text).strip()
+    return cleaned, tags
+
+def _clean_term(term: str) -> str:
+    """Unescape HTML entities and strip surrounding punctuation/whitespace."""
+    term = html.unescape(term)
+    term = _PUNCT_RE.sub('', term)
+    return term
+
 def get_dict_conn():
     if not os.path.exists(DICT_DB_PATH):
         return None
@@ -94,14 +119,10 @@ def get_dict_conn():
     return conn
 
 def clean_gloss(gloss_raw):
-    # Splits gloss into readable English definitions list
-    # e.g. "(n,adj-no) (1) seriousness/(2) truth" -> ["seriousness", "truth"]
     senses = []
-    # remove EntL... tags
     gloss_raw = re.sub(r'EntL\d+X?', '', gloss_raw).strip()
     parts = [p.strip() for p in gloss_raw.split('/') if p.strip()]
     for p in parts:
-        # strip tags like (n), (v5u), (1), (2), (See ...)
         clean = re.sub(r'^\([a-zA-Z0-9,\- ]+\)\s*', '', p)
         clean = re.sub(r'^\(\d+\)\s*', '', clean)
         clean = re.sub(r'\(See [^)]+\)', '', clean).strip()
@@ -113,7 +134,6 @@ def query_local_dict(term):
     conn = get_dict_conn()
     if not conn:
         return []
-    
     try:
         rows = conn.execute('''
             SELECT e.kanji, e.reading, e.gloss 
@@ -128,12 +148,32 @@ def query_local_dict(term):
             kanji_list = [k.strip() for k in r['kanji'].split(';') if k.strip()]
             reading_list = [rd.strip() for rd in r['reading'].split(';') if rd.strip()] if r['reading'] else []
             senses = clean_gloss(r['gloss'])
+
+            # Strip EDICT display tags from kanji and reading; collect them separately
+            all_tags = []
+            cleaned_kanji_list = []
+            for k in kanji_list:
+                ck, tags = _strip_edict_tags(k)
+                if ck:
+                    cleaned_kanji_list.append(ck)
+                all_tags.extend(tags)
+            cleaned_reading_list = []
+            for rd in reading_list:
+                crd, tags = _strip_edict_tags(rd)
+                if crd:
+                    cleaned_reading_list.append(crd)
+                all_tags.extend(tags)
+            # Deduplicate tags
+            seen = set()
+            unique_tags = [t for t in all_tags if not (t in seen or seen.add(t))]
+
             results.append({
-                'kanji': kanji_list[0] if kanji_list else term,
-                'kanji_alt': kanji_list[1:],
-                'reading': reading_list[0] if reading_list else (kanji_list[0] if kanji_list else term),
-                'reading_alt': reading_list[1:],
+                'kanji': cleaned_kanji_list[0] if cleaned_kanji_list else term,
+                'kanji_alt': cleaned_kanji_list[1:],
+                'reading': cleaned_reading_list[0] if cleaned_reading_list else (cleaned_kanji_list[0] if cleaned_kanji_list else term),
+                'reading_alt': cleaned_reading_list[1:],
                 'definitions': senses,
+                'tags': unique_tags,  # raw EDICT tags, hidden in UI by default
                 'source': 'local'
             })
         return results
@@ -150,39 +190,43 @@ def deinflect(word):
             base = word[:-len(suffix)] + replacement
             if base not in candidates and len(base) > 0:
                 candidates.append(base)
-    # Also test stripping common particles if attached
+    # Strip common particles if attached
     for part in ['は', 'が', 'を', 'に', 'へ', 'と', 'で', 'から', 'まで', 'より', 'も']:
         if word.endswith(part) and len(word) > 1:
             candidates.append(word[:-len(part)])
     return candidates
 
 def lookup_local(word):
-    # Try exact word
-    results = query_local_dict(word)
+    # Clean first
+    clean_word = _clean_term(word)
+    if not clean_word:
+        return [], word
+
+    # 1. Exact match (cleaned)
+    results = query_local_dict(clean_word)
     if results:
-        return results, word
-    
-    # Try deinflected forms
-    candidates = deinflect(word)
-    for c in candidates:
-        if c == word:
+        return results, clean_word
+
+    # 2. Deinflected forms
+    for candidate in deinflect(clean_word):
+        if candidate == clean_word:
             continue
-        res = query_local_dict(c)
+        res = query_local_dict(candidate)
         if res:
-            return res, c
-            
-    # Try prefix trimming (e.g. for compound words or punctuation attached)
-    for l in range(len(word) - 1, 1, -1):
-        sub = word[:l]
+            return res, candidate
+
+    # 3. Prefix trimming (compound words)
+    for length in range(len(clean_word) - 1, 1, -1):
+        sub = clean_word[:length]
         res = query_local_dict(sub)
         if res:
             return res, sub
-            
-    return [], word
+
+    return [], clean_word
 
 def query_jisho(word):
     url = f"https://jisho.org/api/v1/search/words?keyword={urllib.parse.quote(word)}"
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     try:
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode('utf-8'))
@@ -220,7 +264,7 @@ def full_lookup(word):
             'results': local_results
         }
     
-    # 2. Online Jisho lookup
+    # 2. Online Jisho fallback
     jisho_results = query_jisho(word)
     if jisho_results:
         return {
@@ -229,7 +273,7 @@ def full_lookup(word):
             'found': True,
             'results': jisho_results
         }
-        
+    
     return {
         'term': word,
         'matched_lemma': word,

@@ -424,6 +424,21 @@ async function showDictionaryPopup(word, anchorElement) {
       termEl.textContent = first.kanji || word;
       readingEl.textContent = first.reading || '';
 
+      // Handle EDICT tags: show toggle button only when tags exist
+      const tagsEl = document.getElementById('dp-tags');
+      const tagsBtn = document.getElementById('dp-tags-btn');
+      const allTags = data.results.flatMap(r => r.tags || []);
+      const uniqueTags = [...new Set(allTags)];
+      if (uniqueTags.length > 0 && tagsEl && tagsBtn) {
+        tagsEl.textContent = uniqueTags.join(' ');
+        tagsEl.style.display = 'none';
+        tagsBtn.style.display = 'inline-flex';
+        tagsBtn._tagsVisible = false;
+      } else {
+        if (tagsEl) tagsEl.style.display = 'none';
+        if (tagsBtn) tagsBtn.style.display = 'none';
+      }
+
       let defsHtml = '<ol>';
       data.results.forEach(r => {
         const defStr = r.definitions.join(', ');
@@ -450,6 +465,16 @@ async function showDictionaryPopup(word, anchorElement) {
 function hideDictionaryPopup() {
   const popup = document.getElementById('dict-popup');
   if (popup) popup.style.display = 'none';
+}
+
+function toggleDictTags() {
+  const tagsEl = document.getElementById('dp-tags');
+  const tagsBtn = document.getElementById('dp-tags-btn');
+  if (!tagsEl || !tagsBtn) return;
+  const visible = tagsBtn._tagsVisible;
+  tagsEl.style.display = visible ? 'none' : 'block';
+  tagsBtn._tagsVisible = !visible;
+  tagsBtn.title = !visible ? 'Nascondi tag tecnici EDICT' : 'Mostra tag tecnici EDICT';
 }
 
 // ==========================================================================

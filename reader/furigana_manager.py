@@ -1,5 +1,6 @@
 import pykakasi
 import re
+import html
 from bs4 import BeautifulSoup, NavigableString
 
 _kks = None
@@ -12,6 +13,17 @@ def get_kks():
 
 def contains_kanji(text):
     return bool(re.search(r'[\u4e00-\u9faf\u3400-\u4dbf]', text))
+
+# Compiled once: strip surrounding punctuation/whitespace from tokens
+_PUNCT_RE = re.compile(
+    r'^[\s\.,!?、。！？…「」『』【】《》〝〟・〜（）\(\)\[\]\{\}<>"\'\'\'""]+|'
+    r'[\s\.,!?、。！？…「」『』【】《》〝〟・〜（）\(\)\[\]\{\}<>"\'\'\'""]+$'
+)
+
+def _clean_token(token: str) -> str:
+    """Unescape HTML entities and strip surrounding punctuation/whitespace."""
+    token = html.unescape(token)
+    return _PUNCT_RE.sub('', token)
 
 def add_furigana_to_text(text):
     """
@@ -27,8 +39,6 @@ def add_furigana_to_text(text):
         orig = item['orig']
         hira = item['hira']
         if contains_kanji(orig) and orig != hira:
-            # If orig has mixed kanji and kana (e.g. 倒れ, 気付い),
-            # pykakasi splits well, but we wrap in ruby
             out.append(f'<ruby>{orig}<rt>{hira}</rt></ruby>')
         else:
             out.append(orig)
@@ -36,19 +46,17 @@ def add_furigana_to_text(text):
 
 def inject_furigana_into_html(html_str):
     """
-    Takes an HTML fragment, finds text nodes outside existing <ruby> / <rt> / <script> / <style> tags,
+    Takes an HTML fragment, finds text nodes outside existing <ruby>/<rt>/<script>/<style> tags,
     and replaces Kanji words with <ruby> markup.
     """
     soup = BeautifulSoup(html_str, 'html.parser')
-    
-    # Do not touch existing ruby elements or headers/scripts
     skip_tags = {'ruby', 'rt', 'rp', 'script', 'style', 'head', 'meta', 'link'}
     
     for text_node in list(soup.find_all(string=True)):
         if text_node.parent and text_node.parent.name in skip_tags:
             continue
         
-        # Check if grandparent is ruby/rt
+        # Check if any ancestor is ruby/rt
         parent = text_node.parent
         is_in_ruby = False
         while parent:
@@ -63,19 +71,26 @@ def inject_furigana_into_html(html_str):
         if contains_kanji(raw):
             new_html = add_furigana_to_text(raw)
             if new_html != raw:
-                # Parse replacement fragment
                 new_soup = BeautifulSoup(new_html, 'html.parser')
                 text_node.replace_with(new_soup)
                 
     return str(soup)
 
 def analyze_tokens(text):
+    """Tokenize Japanese text. Returns cleaned tokens suitable for dictionary lookup."""
     kks = get_kks()
     conv = kks.convert(text)
-    return [{
-        'orig': item['orig'],
-        'hira': item['hira'],
-        'kana': item['kana'],
-        'romaji': item['hepburn'],
-        'has_kanji': contains_kanji(item['orig'])
-    } for item in conv]
+    result = []
+    for item in conv:
+        orig = _clean_token(item['orig'])
+        # Skip empty tokens (were pure punctuation)
+        if not orig:
+            continue
+        result.append({
+            'orig': orig,
+            'hira': item['hira'],
+            'kana': item['kana'],
+            'romaji': item['hepburn'],
+            'has_kanji': contains_kanji(orig)
+        })
+    return result
